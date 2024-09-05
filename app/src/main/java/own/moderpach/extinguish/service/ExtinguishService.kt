@@ -94,7 +94,7 @@ class ExtinguishService : LifecycleService() {
                 if (requestScreenOn) floatingButtonHost?.show()
                 else floatingButtonHost?.hide()
             } else {
-                floatingButtonHost?.updateScreenState(true)
+                floatingButtonHost?.updateScreenState(requestScreenOn)
             }
         }
 
@@ -307,7 +307,10 @@ class ExtinguishService : LifecycleService() {
                             }
                         }
 
-                        FloatingButtonHost.Action.TurnScreenOn -> turnScreenOn()
+                        FloatingButtonHost.Action.TurnScreenOn -> {
+                            turnScreenOn()
+                            updateHostState(true, feature)
+                        }
                     }
                 }
             }
@@ -499,6 +502,7 @@ class ExtinguishService : LifecycleService() {
         )
     )
         .processNameSuffix(DisplayControlService.TAG)
+        .tag(DisplayControlService.TAG)
         .debuggable(BuildConfig.DEBUG)
         .version(BuildConfig.VERSION_CODE)
         .daemon(false)
@@ -540,6 +544,7 @@ class ExtinguishService : LifecycleService() {
         )
     )
         .processNameSuffix(EventsProviderService.TAG)
+        .tag(EventsProviderService.TAG)
         .debuggable(BuildConfig.DEBUG)
         .version(BuildConfig.VERSION_CODE)
         .daemon(false)

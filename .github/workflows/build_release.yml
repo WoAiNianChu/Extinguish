@@ -17,16 +17,47 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
-      # Setup Java
-      - uses: actions/setup-java@v4
+      - name: Retrieve the secret and decode it to a file
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.KEY_PASS }}
+        run: |
+          echo $KEYSTORE_BASE64 | base64 --decode > extinguish.jks
+          ls
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: 'corretto' # See 'Supported distributions' for available options
           java-version: '17'
 
-      # Setup Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # See Project
-      - name: See Project
-        run: ls 
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Project
+        run: |
+          ./gradlew assembleRelease
+
+      - name: Signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.KEY_PASS }}
+        run: |
+          apk_path="./app/build/outputs/apk/release"
+          build_tools_path="$ANDROID_SDK_ROOT/build-tools/35.0.0"
+          $build_tools_path/zipalign -v -p 4 "$apk_path/app-release.apk" "$apk_path/app-release-aligned.apk"
+          $build_tools_path/apksigner sign --ks "./extinguish.jks" --ks-key-alias $KEY_ALIAS --ks-pass pass:$KEYSTORE_PASS --key-pass pass:$KEY_PASS --out "$apk_path/app-release.apk" "$apk_path/app-release-aligned.apk"
+          $build_tools_path/apksigner verify -v "$apk_path/app-release.apk"
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: app/build/outputs/apk/release/app-release.apk
