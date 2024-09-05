@@ -18,6 +18,7 @@ jobs:
         uses: actions/setup-java@v3  # Updated to v3
         with:
           java-version: '17'
+          distribution: 'oea'  # Specify the Java distribution (e.g., 'adopt', 'zulu', 'temurin', etc.)
 
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2  # Updated to v2
